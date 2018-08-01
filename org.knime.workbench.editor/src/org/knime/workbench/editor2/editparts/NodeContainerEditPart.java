@@ -133,7 +133,9 @@ import org.knime.core.ui.node.workflow.WorkflowManagerUI;
 import org.knime.core.ui.wrapper.Wrapper;
 import org.knime.workbench.KNIMEEditorPlugin;
 import org.knime.workbench.core.util.ImageRepository;
+import org.knime.workbench.editor2.EditorModeParticipant;
 import org.knime.workbench.editor2.WorkflowEditor;
+import org.knime.workbench.editor2.WorkflowEditorMode;
 import org.knime.workbench.editor2.WorkflowManagerInput;
 import org.knime.workbench.editor2.WorkflowSelectionDragEditPartsTracker;
 import org.knime.workbench.editor2.commands.CreateConnectionCommand;
@@ -157,9 +159,9 @@ import org.knime.workbench.ui.wrapper.WrappedNodeDialog;
  * @author Florian Georg, University of Konstanz
  * @author Christoph Sieb, University of Konstanz
  */
-public class NodeContainerEditPart extends AbstractWorkflowEditPart implements NodeStateChangeListener,
-    NodeProgressListener, NodeMessageListener, NodeUIInformationListener, EditPartListener, ConnectableEditPart,
-    NodeEditPart, NodePropertyChangedListener, IPropertyChangeListener, IAdaptable {
+public class NodeContainerEditPart extends AbstractWorkflowEditPart implements ConnectableEditPart, EditPartListener,
+    EditorModeParticipant, IAdaptable, IPropertyChangeListener, NodeEditPart, NodeMessageListener, NodeProgressListener,
+    NodePropertyChangedListener, NodeStateChangeListener, NodeUIInformationListener {
 
     private static final NodeLogger LOGGER = NodeLogger.getLogger(NodeContainerEditPart.class);
 
@@ -191,12 +193,15 @@ public class NodeContainerEditPart extends AbstractWorkflowEditPart implements N
     private static final Image NODE_LOCK_ICON =
             ImageRepository.getImage(KNIMEEditorPlugin.PLUGIN_ID, "icons/meta/metanode_lock_decorator.png");
 
+
     /**
      * true, if the figure was initialized from the node extra info object.
      */
     private boolean m_uiListenerActive = true;
 
     private boolean m_showFlowVarPorts = false;
+
+    private NodeContainerFigure m_figure;
 
     /**
      * @return The <code>NodeContainer</code>(= model)
@@ -310,12 +315,12 @@ public class NodeContainerEditPart extends AbstractWorkflowEditPart implements N
     @Override
     protected IFigure createFigure() {
         // create the visuals for the node container.
-        final NodeContainerFigure nodeFigure = new NodeContainerFigure(new ProgressFigure());
+        m_figure = new NodeContainerFigure(new ProgressFigure());
         // init the user specified node name
         if (getRootEditPart() != null) {
-            nodeFigure.hideNodeName(getRootEditPart().hideNodeNames());
+            m_figure.hideNodeName(getRootEditPart().hideNodeNames());
         }
-        return nodeFigure;
+        return m_figure;
     }
 
     /**
@@ -1290,4 +1295,13 @@ public class NodeContainerEditPart extends AbstractWorkflowEditPart implements N
         return null;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void workflowEditorModeWasSet(final WorkflowEditorMode newMode) {
+        if (m_figure != null) {
+            m_figure.workflowEditorModeWasSet(newMode);
+        }
+    }
 }

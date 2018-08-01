@@ -164,8 +164,8 @@ public class NodeAnnotationEditPart extends AnnotationEditPart {
     @Override
     protected IFigure createFigure() {
         Annotation anno = getModel();
-        NodeAnnotationFigure f = new NodeAnnotationFigure(anno);
-        return f;
+        m_figure = new NodeAnnotationFigure(anno);
+        return m_figure;
     }
 
     /**
@@ -189,13 +189,14 @@ public class NodeAnnotationEditPart extends AnnotationEditPart {
         if (prefix == null || prefix.isEmpty()) {
             prefix = "Node";
         }
-        int minTextW =
-                AnnotationEditPart.nodeAnnotationDefaultLineWidth(prefix
-                        + " 9999xxxxxxxxx");
+        final int minTextW = AnnotationEditPart.nodeAnnotationDefaultLineWidth(prefix + " 9999xxxxxxxxx");
         // but not less than the node default width
         return Math.max(minTextW, NodeContainerFigure.WIDTH);
     }
 
+    /**
+     * @return the minimum height for a node annotation
+     */
     public static int getNodeAnnotationMinHeight() {
         return AnnotationEditPart.nodeAnnotationDefaultOneLineHeight();
     }

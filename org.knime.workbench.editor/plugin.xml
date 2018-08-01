@@ -15,6 +15,11 @@
             name="Workflow Editor Settings..."/>
       <command
             categoryId="knime.command.category"
+            description="Toggles the edit mode between Annotation Edit and Node Edit"
+            id="knime.commands.editor.toggleEditorMode"
+            name="Toggle Editor Mode"/>
+      <command
+            categoryId="knime.command.category"
             description="Toggles the snap to grid behavior of the workflow editor"
             id="knime.commands.editor.toggleGrid"
             name="Toggle Snap to Grid"/>
@@ -412,10 +417,21 @@
                icon="icons/editor_UI_settings_16.png"
                id="org.knime.workbench.editor.actions.gridSettings"
                label="Workflow Editor Settings..."
-               menubarPath="org.knime.workbench.editor.menu/group2"
+               menubarPath="org.knime.workbench.editor.menu/group1"
                style="push"
-               toolbarPath="org.knime.workbench.editor.menu/group2"
+               toolbarPath="org.knime.workbench.editor.menu/group1"
                tooltip="Open the settings dialog for the workflow editor"/>
+         <action
+               class="org.knime.workbench.editor2.actions.delegates.ToggleEditorModeEditorAction"
+               definitionId="knime.commands.editor.toggleEditorMode"
+               disabledIcon="icons/lock.gif"
+               icon="icons/lock.gif"
+               id="org.knime.workbench.editor.actions.toggleEditorMode"
+               label="Toggle Editor Mode"
+               menubarPath="org.knime.workbench.editor.menu/group1"
+               style="push"
+               toolbarPath="org.knime.workbench.editor.menu/group1"
+               tooltip="Toggle the edit mode between Annotation Edit and Node Edit"/>
          <action
                class="org.knime.workbench.editor2.actions.delegates.ToggleGridEditorAction"
                definitionId="knime.commands.editor.toggleGrid"

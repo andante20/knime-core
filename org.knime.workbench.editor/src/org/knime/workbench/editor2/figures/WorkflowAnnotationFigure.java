@@ -54,10 +54,13 @@ import org.eclipse.draw2d.geometry.Rectangle;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.ui.PlatformUI;
 import org.knime.core.node.workflow.Annotation;
 import org.knime.core.node.workflow.AnnotationData;
 import org.knime.workbench.core.util.ImageRepository;
 import org.knime.workbench.core.util.ImageRepository.SharedImages;
+import org.knime.workbench.editor2.WorkflowEditor;
+import org.knime.workbench.editor2.WorkflowEditorMode;
 import org.knime.workbench.editor2.editparts.AnnotationEditPart;
 
 /**
@@ -91,15 +94,32 @@ public class WorkflowAnnotationFigure extends NodeAnnotationFigure {
     public void newContent(final Annotation annotation) {
         super.newContent(annotation);
 
-        AnnotationData data = annotation.getData();
+        final WorkflowEditor we =
+                (WorkflowEditor)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
+        // If we is null, we're still coming up and so definitely not in the non-default-editor-mode
+        final boolean renderEnabled = (we != null) && WorkflowEditorMode.ANNOTATION_EDIT.equals(we.getEditorMode());
+        final AnnotationData data = annotation.getData();
 
         Color bg = AnnotationEditPart.RGBintToColor(data.getBgColor());
+        if (!renderEnabled) {
+            bg = AnnotationEditPart.convertToGrayscale(bg);
+        }
         setBackgroundColor(bg);
         m_page.setBackgroundColor(bg);
+
+        Color fg = AnnotationEditPart.getAnnotationDefaultForegroundColor();
+        if (!renderEnabled) {
+            fg = AnnotationEditPart.convertToGrayscale(fg);
+        }
+        setForegroundColor(fg);
+        m_page.setForegroundColor(fg);
 
         // set border with specified annotation color
         if (data.getBorderSize() > 0) {
             Color col = AnnotationEditPart.RGBintToColor(data.getBorderColor());
+            if (!renderEnabled) {
+                col = AnnotationEditPart.convertToGrayscale(col);
+            }
             m_page.setBorder(new LineBorder(col, data.getBorderSize()));
         } else {
             m_page.setBorder(null);

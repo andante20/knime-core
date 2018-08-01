@@ -61,11 +61,13 @@ import org.eclipse.draw2d.ToolbarLayout;
 import org.eclipse.draw2d.geometry.Dimension;
 import org.eclipse.draw2d.geometry.Point;
 import org.eclipse.draw2d.geometry.Rectangle;
+import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.ui.PlatformUI;
 import org.knime.core.node.NodeFactory.NodeType;
 import org.knime.core.node.NodeLogger;
 import org.knime.core.node.util.ConvenienceMethods;
@@ -79,6 +81,10 @@ import org.knime.core.ui.node.workflow.SingleNodeContainerUI;
 import org.knime.core.ui.wrapper.Wrapper;
 import org.knime.workbench.KNIMEEditorPlugin;
 import org.knime.workbench.core.util.ImageRepository;
+import org.knime.workbench.editor2.EditorModeParticipant;
+import org.knime.workbench.editor2.WorkflowEditor;
+import org.knime.workbench.editor2.WorkflowEditorMode;
+import org.knime.workbench.editor2.editparts.AnnotationEditPart;
 import org.knime.workbench.editor2.editparts.FontStore;
 import org.knime.workbench.editor2.figures.ProgressFigure.ProgressMode;
 
@@ -99,7 +105,7 @@ import org.knime.workbench.editor2.figures.ProgressFigure.ProgressMode;
  * @author Florian Georg, University of Konstanz
  * @author Christoph Sieb, University of Konstanz
  */
-public class NodeContainerFigure extends RectangleFigure {
+public class NodeContainerFigure extends RectangleFigure implements EditorModeParticipant {
 
     // default plugin ID to get icons/images from
     private static final String EDITOR_PLUGIN_ID = KNIMEEditorPlugin.PLUGIN_ID;
@@ -326,7 +332,6 @@ public class NodeContainerFigure extends RectangleFigure {
      */
     public void setType(final NodeType type) {
         m_symbolFigure.setType(type);
-
     }
 
     public void setJobExecutorIcon(final Image jobExecIcon) {
@@ -691,6 +696,14 @@ public class NodeContainerFigure extends RectangleFigure {
      */
     @Override
     public Color getBackgroundColor() {
+        final WorkflowEditor we =
+                (WorkflowEditor)PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage().getActiveEditor();
+        final boolean renderEnabled = (we == null) || WorkflowEditorMode.NODE_EDIT.equals(we.getEditorMode());
+
+        if (!renderEnabled) {
+            return AnnotationEditPart.convertToGrayscale(m_backgroundColor);
+        }
+
         return m_backgroundColor;
     }
 
@@ -744,8 +757,8 @@ public class NodeContainerFigure extends RectangleFigure {
      */
     @Override
     public void paintFigure(final Graphics graphics) {
-        graphics.setBackgroundColor(getBackgroundColor());
-        super.paintFigure(graphics);
+      graphics.setBackgroundColor(getBackgroundColor());
+      super.paintFigure(graphics);
     }
 
     /**
@@ -997,6 +1010,7 @@ public class NodeContainerFigure extends RectangleFigure {
             return img == null ? ImageRepository.getUnscaledImage(EDITOR_PLUGIN_ID, BACKGROUND_OTHER) : img;
         }
 
+        private NodeType m_nodeType;
         /**
          * Sets a type specific background image.
          *
@@ -1004,6 +1018,7 @@ public class NodeContainerFigure extends RectangleFigure {
          * @see org.knime.workbench.repository.model.NodeTemplate
          */
         void setType(final NodeType type) {
+            m_nodeType = type;
             m_backgroundIcon.setIcon(getBackgroundForType(type));
         }
 
@@ -1015,6 +1030,16 @@ public class NodeContainerFigure extends RectangleFigure {
         void setIcon(final Image icon) {
             m_iconFigure.setIcon(icon);
             m_iconFigure.revalidate();
+        }
+
+        void updateIcon(final boolean nodeIsEnabled) {
+            Image i = getBackgroundForType(m_nodeType);
+
+            if (!nodeIsEnabled) {
+                i = new Image(Display.getDefault(), i, SWT.IMAGE_GRAY);
+            }
+
+            setIcon(i);
         }
 
         void setBackgroundIcon(final Image icon) {
@@ -1086,6 +1111,7 @@ public class NodeContainerFigure extends RectangleFigure {
          *
          * @param message the message to set
          */
+        @SuppressWarnings("unchecked")
         public void setWarning(final String message) {
 
             // as the warning sign should always be before the error sign
@@ -1233,7 +1259,7 @@ public class NodeContainerFigure extends RectangleFigure {
      */
     private class InfoWarnErrorFigure extends Figure {
 
-        private final Label m_label;
+        private final Label m_figureLabel;
 
         /**
          * Creates a new bottom figure.
@@ -1244,9 +1270,9 @@ public class NodeContainerFigure extends RectangleFigure {
             layout.setMinorAlignment(OrderedLayout.ALIGN_CENTER);
             layout.setStretchMinorAxis(true);
             setLayoutManager(layout);
-            m_label = new Label();
+            m_figureLabel = new Label();
 
-            add(m_label);
+            add(m_figureLabel);
             setOpaque(false);
         }
 
@@ -1256,7 +1282,7 @@ public class NodeContainerFigure extends RectangleFigure {
          * @param icon The icon (traffic light) to set
          */
         public void setIcon(final Image icon) {
-            m_label.setIcon(icon);
+            m_figureLabel.setIcon(icon);
             revalidate();
         }
 
@@ -1266,7 +1292,7 @@ public class NodeContainerFigure extends RectangleFigure {
          * @param message The status message for the tool tip
          */
         private void setToolTip(final String message, final int type) {
-            m_label.setToolTip(new WarnErrorToolTip(message, type));
+            m_figureLabel.setToolTip(new WarnErrorToolTip(message, type));
             revalidate();
         }
 
@@ -1276,7 +1302,7 @@ public class NodeContainerFigure extends RectangleFigure {
         @Override
         public Dimension getPreferredSize(final int wHint, final int hHint) {
             return super.getPreferredSize(NodeContainerFigure.this
-                    .getSymbolFigure().getPreferredSize().width, m_label
+                    .getSymbolFigure().getPreferredSize().width, m_figureLabel
                     .getPreferredSize().height);
         }
 
@@ -1402,4 +1428,12 @@ public class NodeContainerFigure extends RectangleFigure {
         return new Point(xDiff, yDiff);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void workflowEditorModeWasSet(final WorkflowEditorMode newMode) {
+        m_symbolFigure.updateIcon(WorkflowEditorMode.NODE_EDIT.equals(newMode));
+        repaint();
+    }
 }
